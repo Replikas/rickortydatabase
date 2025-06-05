@@ -13,7 +13,7 @@
     "seed": "node scripts/seed.js",
     "clean": "node scripts/clean.js",
     "setup-admin": "node setup-admin.js",
-    "postinstall": "node setup-admin.js || echo 'Admin setup will run after first user registration'"
+    "postinstall": "npm install --os=linux --cpu=x64 sharp && node setup-admin.js || echo 'Admin setup will run after first user registration'"
   },
   "dependencies": {
     "express": "^4.18.2",
