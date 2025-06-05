@@ -9,6 +9,7 @@ const Content = require('../models/Content');
 const Comment = require('../models/Comment');
 const User = require('../models/User');
 const { auth, optionalAuth } = require('../middleware/auth');
+const cv = require('opencv4nodejs');
 
 const router = express.Router();
 
@@ -97,6 +98,76 @@ const getImageMetadata = async (imagePath) => {
   } catch (error) {
     console.error('Error getting image metadata:', error);
     return null;
+  }
+};
+
+// Helper function to classify image as cartoon vs real photo
+const isCartoonImage = async (imagePath) => {
+  try {
+    // Read image using OpenCV
+    const image = await cv.imreadAsync(imagePath);
+    
+    // Convert to HSV for better color analysis
+    const hsvImage = image.cvtColor(cv.COLOR_BGR2HSV);
+    
+    // Method 1: Count unique colors (cartoons typically have fewer colors)
+    const resized = image.resize(100, 100); // Resize for faster processing
+    const uniqueColors = new Set();
+    
+    for (let y = 0; y < resized.rows; y++) {
+      for (let x = 0; x < resized.cols; x++) {
+        const pixel = resized.at(y, x);
+        const colorKey = `${Math.floor(pixel.x/8)}-${Math.floor(pixel.y/8)}-${Math.floor(pixel.z/8)}`;
+        uniqueColors.add(colorKey);
+      }
+    }
+    
+    const colorCount = uniqueColors.size;
+    const colorRatio = colorCount / (100 * 100);
+    
+    // Method 2: Edge detection analysis (cartoons have cleaner edges)
+    const gray = image.cvtColor(cv.COLOR_BGR2GRAY);
+    const edges = gray.canny(50, 150);
+    const edgePixels = cv.countNonZero(edges);
+    const edgeRatio = edgePixels / (gray.rows * gray.cols);
+    
+    // Method 3: Color saturation analysis (cartoons often more saturated)
+    const channels = hsvImage.split();
+    const saturation = channels[1];
+    const meanSaturation = saturation.mean();
+    
+    // Scoring system (higher score = more likely cartoon)
+    let cartoonScore = 0;
+    
+    // Low color count suggests cartoon
+    if (colorRatio < 0.3) cartoonScore += 2;
+    else if (colorRatio < 0.5) cartoonScore += 1;
+    
+    // Clean edges suggest cartoon
+    if (edgeRatio < 0.1) cartoonScore += 2;
+    else if (edgeRatio < 0.15) cartoonScore += 1;
+    
+    // High saturation suggests cartoon
+    if (meanSaturation.w > 100) cartoonScore += 2;
+    else if (meanSaturation.w > 80) cartoonScore += 1;
+    
+    // Additional check: Smooth gradients (blur comparison)
+    const blurred = image.gaussianBlur(new cv.Size(15, 15), 0);
+    const diff = image.absdiff(blurred);
+    const diffMean = diff.mean();
+    const smoothness = 255 - diffMean.w;
+    
+    if (smoothness > 200) cartoonScore += 1;
+    
+    console.log(`Image analysis - Colors: ${colorCount}, Edge ratio: ${edgeRatio.toFixed(3)}, Saturation: ${meanSaturation.w.toFixed(1)}, Smoothness: ${smoothness.toFixed(1)}, Score: ${cartoonScore}`);
+    
+    // Return true if likely cartoon (score >= 3 out of 7)
+    return cartoonScore >= 3;
+    
+  } catch (error) {
+    console.error('Error in image classification:', error);
+    // If classification fails, allow the image (fail-safe)
+    return true;
   }
 };
 
@@ -371,6 +442,22 @@ router.post('/upload', upload.single('file'), [
     // Handle art-specific processing
     if (contentType === 'art') {
       const imagePath = req.file.path;
+      
+      // Check if image is cartoon/animated content only
+      const isCartoon = await isCartoonImage(imagePath);
+      if (!isCartoon) {
+        // Delete the uploaded file
+        try {
+          await fs.unlink(imagePath);
+        } catch (unlinkError) {
+          console.error('Error deleting rejected file:', unlinkError);
+        }
+        return res.status(400).json({ 
+          message: 'Only cartoon/animated artwork is allowed. Real photographs are not permitted.',
+          code: 'REAL_PHOTO_DETECTED'
+        });
+      }
+      
       const metadata = await getImageMetadata(imagePath);
       
       if (metadata) {
