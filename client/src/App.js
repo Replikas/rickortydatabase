@@ -15,6 +15,8 @@ import Upload from './pages/Upload';
 import About from './pages/About';
 import Guidelines from './pages/Guidelines';
 import Search from './pages/Search';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import './App.css';
 
 
@@ -38,6 +40,8 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/guidelines" element={<Guidelines />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               {/* Add more routes as needed */}
             </Routes>
           </main>

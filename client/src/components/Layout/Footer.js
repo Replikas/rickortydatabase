@@ -65,12 +65,12 @@ const Footer = () => {
               © 2024 Rick & Morty Database. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
-              <button className="text-gray-400 hover:text-white transition-colors">
+              <Link to="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">
                 Privacy Policy
-              </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
+              </Link>
+              <Link to="/terms-of-service" className="text-gray-400 hover:text-white transition-colors">
                 Terms of Service
-              </button>
+              </Link>
             </div>
           </div>
         </div>
