@@ -8,7 +8,9 @@ const Register = () => {
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    ageVerification: false,
+    termsAgreement: false
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -60,6 +62,16 @@ const Register = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    // Age verification
+    if (!formData.ageVerification) {
+      newErrors.ageVerification = 'You must confirm you are 18 or older to register';
+    }
+
+    // Terms agreement
+    if (!formData.termsAgreement) {
+      newErrors.termsAgreement = 'You must agree to the Terms of Service and Privacy Policy';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -74,7 +86,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const { confirmPassword, ...submitData } = formData;
+      const { confirmPassword, ageVerification, termsAgreement, ...submitData } = formData;
       const response = await axios.post('/api/auth/register', submitData);
       
       if (response.data.token) {
@@ -218,25 +230,53 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Terms and Conditions */}
-            <div className="flex items-center">
-              <input
-                id="agree-terms"
-                name="agree-terms"
-                type="checkbox"
-                required
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-              />
-              <label htmlFor="agree-terms" className="ml-2 block text-sm text-gray-900">
-                I agree to the{' '}
-                <Link to="/terms" className="text-green-600 hover:text-green-500">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" className="text-green-600 hover:text-green-500">
-                  Privacy Policy
-                </Link>
-              </label>
+            {/* Age Verification */}
+            <div className="space-y-4">
+              <div className="flex items-start">
+                <input
+                  id="ageVerification"
+                  name="ageVerification"
+                  type="checkbox"
+                  checked={formData.ageVerification}
+                  onChange={(e) => setFormData({ ...formData, ageVerification: e.target.checked })}
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-1"
+                />
+                <label htmlFor="ageVerification" className="ml-2 block text-sm text-gray-900">
+                  <span className="font-medium">I confirm that I am 18 years of age or older.</span>
+                  <br />
+                  <span className="text-gray-600 text-xs">
+                    This platform contains mature content including NSFW material. By checking this box, you acknowledge that you are legally an adult and take full responsibility for accessing age-restricted content. We are not responsible for any false age declarations.
+                  </span>
+                </label>
+              </div>
+              {errors.ageVerification && (
+                <p className="text-sm text-red-600">{errors.ageVerification}</p>
+              )}
+
+              {/* Terms and Conditions */}
+              <div className="flex items-start">
+                <input
+                  id="termsAgreement"
+                  name="termsAgreement"
+                  type="checkbox"
+                  checked={formData.termsAgreement}
+                  onChange={(e) => setFormData({ ...formData, termsAgreement: e.target.checked })}
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-1"
+                />
+                <label htmlFor="termsAgreement" className="ml-2 block text-sm text-gray-900">
+                  I agree to the{' '}
+                  <Link to="/terms" className="text-green-600 hover:text-green-500">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy" className="text-green-600 hover:text-green-500">
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+              {errors.termsAgreement && (
+                <p className="text-sm text-red-600">{errors.termsAgreement}</p>
+              )}
             </div>
 
             {/* Submit Button */}
