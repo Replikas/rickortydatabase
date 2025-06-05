@@ -13,7 +13,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false); // Set to false since we're not using backend
+  const [loading, setLoading] = useState(true); // Set to true initially to check for existing token
 
   const fetchUser = useCallback(async () => {
     try {
@@ -37,6 +37,9 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       // Fetch user data including role information
       fetchUser();
+    } else {
+      // No token found, stop loading
+      setLoading(false);
     }
   }, [fetchUser]);
 

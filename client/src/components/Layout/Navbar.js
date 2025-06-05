@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -32,7 +32,11 @@ const Navbar = () => {
             <Link to="/search" className="text-white hover:text-green-200 px-3 py-2 rounded-md">
               Search
             </Link>
-            {user ? (
+            {loading ? (
+              <div className="text-white px-3 py-2">
+                Loading...
+              </div>
+            ) : user ? (
               <>
                 <Link to="/upload" className="text-white hover:text-green-200 px-3 py-2 rounded-md">
                   Upload
@@ -87,7 +91,11 @@ const Navbar = () => {
               <Link to="/search" className="text-white hover:text-green-200 block px-3 py-2 rounded-md">
                 Search
               </Link>
-              {user ? (
+              {loading ? (
+                <div className="text-white block px-3 py-2">
+                  Loading...
+                </div>
+              ) : user ? (
                 <>
                   <Link to="/upload" className="text-white hover:text-green-200 block px-3 py-2 rounded-md">
                     Upload

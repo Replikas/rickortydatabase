@@ -47,7 +47,7 @@ const Profile = () => {
     setLoading(true);
 
     try {
-      const response = await axios.put('/api/auth/profile', {
+      await axios.put('/api/auth/profile', {
         bio: formData.bio,
         location: formData.location
       });
