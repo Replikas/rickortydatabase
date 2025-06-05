@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from '../api/config';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -26,11 +28,8 @@ const Login = () => {
       const response = await axios.post('/api/auth/login', formData);
       
       if (response.data.token) {
-        // Store token in localStorage
-        localStorage.setItem('token', response.data.token);
-        
-        // Set default authorization header for future requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        // Use AuthContext login function to properly set user state
+        login(response.data.token, response.data.user);
         
         toast.success('Login successful!');
         navigate('/');
