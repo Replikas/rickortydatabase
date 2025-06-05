@@ -212,8 +212,6 @@ const connectDB = async () => {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rickorty-db';
     
     await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
@@ -223,10 +221,10 @@ const connectDB = async () => {
     console.log('✅ MongoDB connected successfully');
     
     // Create indexes
-    const { Content } = require('./models/Content');
-    const { User } = require('./models/User');
-    const { Comment } = require('./models/Comment');
-    
+    const Content = require('./models/Content');
+    const User = require('./models/User');
+    const Comment = require('./models/Comment');
+
     await Content.createIndexes();
     await User.createIndexes();
     await Comment.createIndexes();
