@@ -10,7 +10,7 @@ const Browse = () => {
     sortBy: 'createdAt',
     order: 'desc'
   });
-  const [page, setPage] = useState(1);
+  // const [page, setPage] = useState(1); // TODO: Implement pagination
   const [hasMore, setHasMore] = useState(true);
 
   const contentTypes = ['art', 'fanfiction', 'video', 'audio', 'other'];

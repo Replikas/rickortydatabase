@@ -51,19 +51,19 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <button className="text-gray-300 hover:text-white transition-colors">
                   Guidelines
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <button className="text-gray-300 hover:text-white transition-colors">
                   Support
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <button className="text-gray-300 hover:text-white transition-colors">
                   Contact
-                </a>
+                </button>
               </li>
             </ul>
           </div>
@@ -75,12 +75,12 @@ const Footer = () => {
               © 2024 Rick & Morty Database. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <button className="text-gray-400 hover:text-white transition-colors">
                 Privacy Policy
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              </button>
+              <button className="text-gray-400 hover:text-white transition-colors">
                 Terms of Service
-              </a>
+              </button>
             </div>
           </div>
         </div>

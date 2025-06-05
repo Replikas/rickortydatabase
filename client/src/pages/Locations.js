@@ -10,7 +10,7 @@ const Locations = () => {
     type: '',
     dimension: ''
   });
-  const [page, setPage] = useState(1);
+  // const [page, setPage] = useState(1); // TODO: Implement pagination
   const [hasMore, setHasMore] = useState(true);
 
   const typeOptions = ['planet', 'cluster', 'space station', 'microverse', 'tv', 'resort', 'fantasy town', 'dream', 'dimension', 'unknown'];

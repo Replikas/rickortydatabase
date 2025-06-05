@@ -7,7 +7,7 @@ const Episodes = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [seasonFilter, setSeasonFilter] = useState('');
-  const [page, setPage] = useState(1);
+  // const [page, setPage] = useState(1); // TODO: Implement pagination
   const [hasMore, setHasMore] = useState(true);
 
   const seasons = [1, 2, 3, 4, 5, 6, 7];
