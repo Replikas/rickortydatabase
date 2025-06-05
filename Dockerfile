@@ -21,12 +21,13 @@ RUN npm ci
 
 # Build stage for client
 FROM base AS build-client
-WORKDIR /app/client
+WORKDIR /app
 
-# Copy client source code
-COPY client/ .
+# Copy all source code
+COPY . .
 
 # Build the React application
+WORKDIR /app/client
 RUN npm run build
 
 # Production stage
