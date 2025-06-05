@@ -24,10 +24,10 @@ const Episodes = () => {
       
       if (reset) {
         setEpisodes(newEpisodes);
-        setPage(2);
+        // setPage(2); // TODO: Implement pagination
       } else {
         setEpisodes(prev => [...prev, ...newEpisodes]);
-        setPage(prev => prev + 1);
+        // setPage(prev => prev + 1); // TODO: Implement pagination
       }
       
       setHasMore(false); // No more data to load
@@ -44,18 +44,18 @@ const Episodes = () => {
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const handleSeasonChange = (season) => {
     setSeasonFilter(season);
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const clearFilters = () => {
     setSearchTerm('');
     setSeasonFilter('');
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const loadMore = () => {

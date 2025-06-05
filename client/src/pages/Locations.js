@@ -28,10 +28,10 @@ const Locations = () => {
       
       if (reset) {
         setLocations(newLocations);
-        setPage(2);
+        // setPage(2); // TODO: Implement pagination
       } else {
         setLocations(prev => [...prev, ...newLocations]);
-        setPage(prev => prev + 1);
+        // setPage(prev => prev + 1); // TODO: Implement pagination
       }
       
       setHasMore(false); // No more data to load
@@ -48,18 +48,18 @@ const Locations = () => {
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const clearFilters = () => {
     setSearchTerm('');
     setFilters({ type: '', dimension: '' });
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const loadMore = () => {

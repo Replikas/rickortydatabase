@@ -33,10 +33,10 @@ const Browse = () => {
       
       if (reset) {
         setContent(newContent);
-        setPage(2);
+        // setPage(2); // TODO: Implement pagination
       } else {
         setContent(prev => [...prev, ...newContent]);
-        setPage(prev => prev + 1);
+        // setPage(prev => prev + 1); // TODO: Implement pagination
       }
       
       setHasMore(false); // No more content to load since backend is not available
@@ -52,7 +52,7 @@ const Browse = () => {
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const loadMore = () => {

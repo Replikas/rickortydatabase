@@ -30,10 +30,10 @@ const Characters = () => {
       
       if (reset) {
         setCharacters(newCharacters);
-        setPage(2);
+        // setPage(2); // TODO: Implement pagination
       } else {
         setCharacters(prev => [...prev, ...newCharacters]);
-        setPage(prev => prev + 1);
+        // setPage(prev => prev + 1); // TODO: Implement pagination
       }
       
       setHasMore(false); // No more data to load
@@ -50,18 +50,18 @@ const Characters = () => {
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const clearFilters = () => {
     setSearchTerm('');
     setFilters({ status: '', species: '', gender: '' });
-    setPage(1);
+    // setPage(1); // TODO: Implement pagination
   };
 
   const loadMore = () => {
