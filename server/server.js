@@ -235,8 +235,14 @@ const connectDB = async () => {
     console.log('✅ Database indexes created');
     
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
+    console.error('❌ MongoDB connection error:', error.message);
+    console.log('\n📝 To run this application, you need MongoDB running.');
+    console.log('Options:');
+    console.log('1. Install and start MongoDB locally');
+    console.log('2. Use MongoDB Atlas (cloud) - update MONGODB_URI in .env');
+    console.log('3. Use Docker: docker run -d -p 27017:27017 mongo');
+    console.log('\nFor now, starting server without database connection...');
+    return false;
   }
 };
 
@@ -256,12 +262,18 @@ process.on('SIGINT', async () => {
 // Start server
 const startServer = async () => {
   try {
-    await connectDB();
+    const dbConnected = await connectDB();
     
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 Client URL: ${process.env.CLIENT_URL || 'http://localhost:3000'}`);
+      
+      if (dbConnected) {
+        console.log(`✅ Database: Connected`);
+      } else {
+        console.log(`⚠️  Database: Not connected (some features may not work)`);
+      }
       
       if (process.env.NODE_ENV === 'development') {
         console.log(`🔗 API Base: http://localhost:${PORT}/api`);

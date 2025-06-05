@@ -1,0 +1,106 @@
+name: Deploy Rick and Morty Database
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm install
+        cd server && npm install
+        cd ../client && npm install
+    
+    - name: Run server tests
+      run: cd server && npm test
+      env:
+        NODE_ENV: test
+        MONGODB_URI: mongodb://localhost:27017/test
+        JWT_SECRET: test-secret
+    
+    - name: Run client tests
+      run: cd client && npm test -- --coverage --watchAll=false
+    
+    - name: Build client
+      run: cd client && npm run build
+
+  deploy-frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install and build
+      run: |
+        cd client
+        npm install
+        npm run build
+    
+    # Example for Vercel deployment
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v25
+      if: github.event_name == 'push'
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./client
+        vercel-args: '--prod'
+
+  deploy-backend:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: cd server && npm install
+    
+    # Example for Railway deployment
+    - name: Deploy to Railway
+      uses: bervProject/railway-deploy@v1.2.0
+      with:
+        railway_token: ${{ secrets.RAILWAY_TOKEN }}
+        service: 'rick-morty-api'
+        
+    # Alternative: Deploy to Heroku
+    # - name: Deploy to Heroku
+    #   uses: akhileshns/heroku-deploy@v3.12.14
+    #   with:
+    #     heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+    #     heroku_app_name: "your-app-name"
+    #     heroku_email: "your-email@example.com"

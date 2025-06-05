@@ -4,12 +4,14 @@
   "description": "A comprehensive Rick and Morty fanworks database for art and fanfiction",
   "main": "server/index.js",
   "scripts": {
+    "setup": "node scripts/setup-env.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",
     "build": "cd client && npm run build",
     "start": "cd server && npm start",
-    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "postinstall": "npm run setup"
   },
   "keywords": ["rick-and-morty", "fanworks", "database", "fanfiction", "art"],
   "author": "Rickorty Database Team",

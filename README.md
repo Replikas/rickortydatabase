@@ -75,6 +75,24 @@ A comprehensive fanworks database for Rick and Morty content, featuring art gall
    - Backend API: http://localhost:5000
    - Health Check: http://localhost:5000/health
 
+## 🚀 Deployment
+
+For production deployment, see the detailed [DEPLOYMENT.md](./DEPLOYMENT.md) guide.
+
+### Quick Deploy Checklist
+1. Set up MongoDB Atlas database
+2. Generate secure JWT_SECRET
+3. Configure environment variables
+4. Deploy to your preferred platform (Vercel, Heroku, Railway, etc.)
+
+### Required Environment Variables
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/rickorty-db
+JWT_SECRET=your-super-secure-jwt-secret-key
+CLIENT_URL=https://your-frontend-domain.com
+NODE_ENV=production
+```
+
 ## 📁 Project Structure
 
 ```
