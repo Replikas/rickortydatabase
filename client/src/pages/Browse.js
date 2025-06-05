@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import axios from '../api/config';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 
 const Browse = () => {
+  const { user } = useAuth();
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState({});
   const [filters, setFilters] = useState({
     contentType: '',
     sortBy: 'createdAt',
@@ -47,6 +51,39 @@ const Browse = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Admin functions
+  const deleteContent = async (contentId) => {
+    if (!window.confirm('Are you sure you want to delete this content?')) return;
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [`delete_${contentId}`]: true }));
+      await axios.delete(`/api/admin/content/${contentId}`);
+      setContent(prev => prev.filter(item => item._id !== contentId));
+      alert('Content deleted successfully');
+    } catch (error) {
+      console.error('Error deleting content:', error);
+      alert('Failed to delete content');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`delete_${contentId}`]: false }));
+    }
+  };
+
+  const banUser = async (userId, username) => {
+    const reason = prompt(`Enter reason for banning ${username}:`);
+    if (!reason) return;
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [`ban_${userId}`]: true }));
+      await axios.post(`/api/admin/users/${userId}/ban`, { reason });
+      alert(`User ${username} has been banned`);
+    } catch (error) {
+      console.error('Error banning user:', error);
+      alert('Failed to ban user');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`ban_${userId}`]: false }));
     }
   };
 
@@ -189,6 +226,28 @@ const Browse = () => {
                     >
                       View Details
                     </Link>
+                    
+                    {/* Admin Controls */}
+                    {user && user.role === 'admin' && (
+                      <div className="mt-2 flex space-x-2">
+                        <button
+                          onClick={() => deleteContent(item._id)}
+                          disabled={actionLoading[`delete_${item._id}`]}
+                          className="flex-1 bg-red-600 text-white text-xs py-1 px-2 rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading[`delete_${item._id}`] ? 'Deleting...' : 'Delete'}
+                        </button>
+                        {item.author && item.author._id && (
+                          <button
+                            onClick={() => banUser(item.author._id, item.author.username)}
+                            disabled={actionLoading[`ban_${item.author._id}`]}
+                            className="flex-1 bg-orange-600 text-white text-xs py-1 px-2 rounded hover:bg-orange-700 transition-colors disabled:opacity-50"
+                          >
+                            {actionLoading[`ban_${item.author._id}`] ? 'Banning...' : 'Ban User'}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
