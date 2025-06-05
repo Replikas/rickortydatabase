@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from '../api/config';
 
 const AdminPanel = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user: loggedInUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [content, setContent] = useState([]);
   const [users, setUsers] = useState([]);
@@ -16,13 +16,13 @@ const AdminPanel = () => {
 
   useEffect(() => {
     // Check if user is admin
-    if (!isAuthenticated || !user || user.role !== 'admin') {
+    if (!isAuthenticated || !loggedInUser || loggedInUser.role !== 'admin') {
       navigate('/');
       return;
     }
 
     fetchData();
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, loggedInUser, navigate]);
 
   const fetchData = async () => {
     try {
@@ -300,7 +300,7 @@ const AdminPanel = () => {
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {!user.isBanned && user._id !== currentUser?._id && (
+                        {!user.isBanned && user._id !== loggedInUser?._id && (
                           <button
                             onClick={() => banUser(user._id)}
                             className="text-red-400 hover:text-red-300 mr-4"
