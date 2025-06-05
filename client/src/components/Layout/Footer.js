@@ -51,9 +51,9 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <button className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/guidelines" className="text-gray-300 hover:text-white transition-colors">
                   Guidelines
-                </button>
+                </Link>
               </li>
             </ul>
           </div>

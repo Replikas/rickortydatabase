@@ -12,6 +12,9 @@ import Locations from './pages/Locations';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Upload from './pages/Upload';
+import About from './pages/About';
+import Guidelines from './pages/Guidelines';
+import Search from './pages/Search';
 import './App.css';
 
 
@@ -32,6 +35,9 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/upload" element={<Upload />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/guidelines" element={<Guidelines />} />
+              <Route path="/search" element={<Search />} />
               {/* Add more routes as needed */}
             </Routes>
           </main>
