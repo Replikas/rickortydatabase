@@ -17,6 +17,7 @@ import Guidelines from './pages/Guidelines';
 import Search from './pages/Search';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Profile from './pages/Profile';
 
 import './App.css';
 
@@ -43,6 +44,7 @@ function App() {
               <Route path="/search" element={<Search />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/profile" element={<Profile />} />
 
               {/* Add more routes as needed */}
             </Routes>
