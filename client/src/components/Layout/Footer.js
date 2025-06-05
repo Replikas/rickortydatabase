@@ -55,16 +55,6 @@ const Footer = () => {
                   Guidelines
                 </button>
               </li>
-              <li>
-                <button className="text-gray-300 hover:text-white transition-colors">
-                  Support
-                </button>
-              </li>
-              <li>
-                <button className="text-gray-300 hover:text-white transition-colors">
-                  Contact
-                </button>
-              </li>
             </ul>
           </div>
         </div>
