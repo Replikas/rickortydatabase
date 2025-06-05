@@ -300,7 +300,7 @@ const AdminPanel = () => {
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {!user.isBanned && user._id !== user._id && (
+                        {!user.isBanned && user._id !== currentUser?._id && (
                           <button
                             onClick={() => banUser(user._id)}
                             className="text-red-400 hover:text-red-300 mr-4"
