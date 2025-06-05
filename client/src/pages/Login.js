@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: '',
+    login: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
@@ -67,12 +67,12 @@ const Login = () => {
               </label>
               <div className="mt-1">
                 <input
-                  id="email"
-                  name="email"
+                  id="login"
+                  name="login"
                   type="email"
                   autoComplete="email"
                   required
-                  value={formData.email}
+                  value={formData.login}
                   onChange={handleChange}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                   placeholder="Enter your email"
