@@ -41,6 +41,9 @@ const Navbar = () => {
                 <Link to="/profile" className="text-white hover:text-green-200 px-3 py-2 rounded-md">
                   Profile
                 </Link>
+                <span className="text-white px-3 py-2">
+                  Welcome, {user.username || user.displayName || 'User'}
+                </span>
                 <button
                   onClick={handleLogout}
                   className="text-white hover:text-green-200 px-3 py-2 rounded-md"
@@ -92,6 +95,9 @@ const Navbar = () => {
                   <Link to="/profile" className="text-white hover:text-green-200 block px-3 py-2 rounded-md">
                     Profile
                   </Link>
+                  <div className="text-white block px-3 py-2">
+                    Welcome, {user.username || user.displayName || 'User'}
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="text-white hover:text-green-200 block px-3 py-2 rounded-md w-full text-left"
