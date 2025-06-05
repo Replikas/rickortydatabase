@@ -56,7 +56,7 @@ async function makeAdmin() {
     await User.findByIdAndUpdate(user._id, { role: 'admin' });
     
     console.log(`Successfully made ${user.username} (${user.email}) an admin!`);
-    console.log('They can now access the admin panel at /admin');
+    console.log('They now have admin privileges for content moderation.');
     
   } catch (error) {
     console.error('Error making user admin:', error);
