@@ -12,7 +12,8 @@ const Upload = () => {
     author: '',
     rating: 'T',
     warnings: [],
-    isNSFW: false
+    isNSFW: false,
+    ao3Url: ''
   });
   const [file, setFile] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
@@ -20,6 +21,7 @@ const Upload = () => {
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [uploadMethod, setUploadMethod] = useState('file'); // 'file' or 'ao3'
   const navigate = useNavigate();
 
   const contentTypes = [
@@ -127,10 +129,22 @@ const Upload = () => {
       newErrors.title = 'Title must be less than 200 characters';
     }
 
-    // File validation
-    if (!file) {
+    // File validation for file upload method
+    if (uploadMethod === 'file' && !file) {
       newErrors.file = 'Please select a file to upload';
-    } else {
+    }
+    
+    // AO3 URL validation for AO3 import method
+    if (uploadMethod === 'ao3' && !formData.ao3Url.trim()) {
+      newErrors.ao3Url = 'Please enter an AO3 URL';
+    }
+    
+    if (uploadMethod === 'ao3' && formData.ao3Url.trim() && !formData.ao3Url.includes('archiveofourown.org')) {
+      newErrors.ao3Url = 'Please enter a valid AO3 URL';
+    }
+
+    // File validation when file is provided
+    if (file) {
       const maxSize = 50 * 1024 * 1024; // 50MB
       if (file.size > maxSize) {
         newErrors.file = 'File size must be less than 50MB';
@@ -191,56 +205,72 @@ const Upload = () => {
     setLoading(true);
 
     try {
-      // Create FormData for file upload
-      const uploadData = new FormData();
+      let response;
       
-      // Add file
-      uploadData.append('file', file);
-      
-      // Add form fields
-      uploadData.append('title', formData.title);
-      uploadData.append('contentType', formData.contentType);
-      uploadData.append('description', formData.description || '');
-      uploadData.append('author', formData.author || '');
-      uploadData.append('rating', formData.rating);
-      uploadData.append('isNSFW', formData.isNSFW);
-      
-      // Add tags
-      if (formData.tags) {
-        const processedTags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        uploadData.append('tags', processedTags.join(','));
-      }
-      
-      // Add warnings
-      if (formData.warnings.length > 0) {
-        formData.warnings.forEach(warning => {
-          uploadData.append('warnings', warning);
+      if (uploadMethod === 'file') {
+        // Handle file upload
+        const uploadData = new FormData();
+        
+        // Add file
+        uploadData.append('file', file);
+        
+        // Add form fields
+        uploadData.append('title', formData.title);
+        uploadData.append('contentType', formData.contentType);
+        uploadData.append('description', formData.description || '');
+        uploadData.append('author', formData.author || '');
+        uploadData.append('rating', formData.rating);
+        uploadData.append('isNSFW', formData.isNSFW);
+        
+        // Add tags
+        if (formData.tags) {
+          const processedTags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+          uploadData.append('tags', processedTags.join(','));
+        }
+        
+        // Add warnings
+        if (formData.warnings.length > 0) {
+          formData.warnings.forEach(warning => {
+            uploadData.append('warnings', warning);
+          });
+        }
+        
+        // Add thumbnail if provided
+        if (thumbnailFile) {
+          uploadData.append('thumbnail', thumbnailFile);
+        }
+
+        response = await axios.post('/api/content/upload', uploadData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            // You could add a progress bar here
+            console.log(`Upload Progress: ${percentCompleted}%`);
+          }
+        });
+      } else {
+        // Handle AO3 import
+        response = await axios.post('/api/content/import-ao3', {
+          ao3Url: formData.ao3Url,
+          title: formData.title,
+          description: formData.description || '',
+          author: formData.author || '',
+          rating: formData.rating,
+          isNSFW: formData.isNSFW,
+          tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0).join(',') : '',
+          warnings: formData.warnings
         });
       }
       
-      // Add thumbnail if provided
-      if (thumbnailFile) {
-        uploadData.append('thumbnail', thumbnailFile);
-      }
-
-      const response = await axios.post('/api/content/upload', uploadData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          // You could add a progress bar here
-          console.log(`Upload Progress: ${percentCompleted}%`);
-        }
-      });
-      
       if (response.data) {
-        toast.success('Content uploaded successfully!');
+        toast.success(uploadMethod === 'file' ? 'Content uploaded successfully!' : 'Fanfiction imported successfully!');
         navigate(`/content/${response.data.content._id}`);
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.message || 'Upload failed. Please try again.';
+      console.error(uploadMethod === 'file' ? 'Upload error:' : 'Import error:', error);
+      const errorMessage = error.response?.data?.message || (uploadMethod === 'file' ? 'Upload failed. Please try again.' : 'Import failed. Please try again.');
       
       // Handle specific validation errors from server
       if (error.response?.data?.errors) {
@@ -335,49 +365,109 @@ const Upload = () => {
               </select>
             </div>
 
-            {/* File Upload */}
-            <div>
-              <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-2">
-                Upload File *
-              </label>
-              <input
-                type="file"
-                id="file"
-                name="file"
-                onChange={handleFileChange}
-                accept={formData.contentType === 'art' ? 'image/*' : '.txt,.md,.pdf'}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                  errors.file ? 'border-red-300' : 'border-gray-300'
-                }`}
-              />
-              {errors.file && (
-                <p className="mt-1 text-sm text-red-600">{errors.file}</p>
-              )}
-              <p className="mt-1 text-sm text-gray-500">
-                {formData.contentType === 'art' 
-                  ? 'Upload your artwork (PNG, JPG, JPEG, GIF - max 50MB)'
-                  : 'Upload your fanfiction (TXT, MD, PDF - max 50MB)'
-                }
-              </p>
-              
-              {/* File Preview */}
-              {filePreview && (
-                <div className="mt-3">
-                  <img 
-                    src={filePreview} 
-                    alt="Preview" 
-                    className="max-w-xs max-h-48 rounded-md border"
-                  />
+            {/* Upload Method Toggle for Fanfiction */}
+            {formData.contentType === 'fic' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Method *
+                </label>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      uploadMethod === 'file'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                    onClick={() => setUploadMethod('file')}
+                  >
+                    Upload File
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      uploadMethod === 'ao3'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                    onClick={() => setUploadMethod('ao3')}
+                  >
+                    Import from AO3
+                  </button>
                 </div>
-              )}
-              {file && !filePreview && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-600">
-                    📄 {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                  </p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* File Upload or AO3 URL */}
+            {(formData.contentType !== 'fic' || uploadMethod === 'file') && (
+              <div>
+                <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload File *
+                </label>
+                <input
+                  type="file"
+                  id="file"
+                  name="file"
+                  onChange={handleFileChange}
+                  accept={formData.contentType === 'art' ? 'image/*' : '.txt,.md,.pdf'}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    errors.file ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.file && (
+                  <p className="mt-1 text-sm text-red-600">{errors.file}</p>
+                )}
+                <p className="mt-1 text-sm text-gray-500">
+                  {formData.contentType === 'art' 
+                    ? 'Upload your artwork (PNG, JPG, JPEG, GIF - max 50MB)'
+                    : 'Upload your fanfiction (TXT, MD, PDF - max 50MB)'
+                  }
+                </p>
+                
+                {/* File Preview */}
+                {filePreview && (
+                  <div className="mt-3">
+                    <img 
+                      src={filePreview} 
+                      alt="Preview" 
+                      className="max-w-xs max-h-48 rounded-md border"
+                    />
+                  </div>
+                )}
+                {file && !filePreview && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm text-gray-600">
+                      📄 {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {formData.contentType === 'fic' && uploadMethod === 'ao3' && (
+              <div>
+                <label htmlFor="ao3Url" className="block text-sm font-medium text-gray-700 mb-2">
+                  AO3 URL *
+                </label>
+                <input
+                  type="url"
+                  id="ao3Url"
+                  name="ao3Url"
+                  value={formData.ao3Url}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    errors.ao3Url ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="https://archiveofourown.org/works/..."
+                />
+                {errors.ao3Url && (
+                  <p className="mt-1 text-sm text-red-600">{errors.ao3Url}</p>
+                )}
+                <p className="mt-1 text-sm text-gray-500">
+                  Enter the URL of the AO3 work you want to import
+                </p>
+              </div>
+            )}
 
             {/* Author */}
             <div>

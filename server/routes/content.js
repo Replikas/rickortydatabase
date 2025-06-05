@@ -72,11 +72,11 @@ const upload = multer({
 const createThumbnail = async (imagePath, thumbnailPath) => {
   try {
     await sharp(imagePath)
-      .resize(640, null, {
-        withoutEnlargement: true,
-        fit: 'inside'
+      .resize(300, 300, {
+        fit: 'inside',
+        withoutEnlargement: true
       })
-      .jpeg({ quality: 85 })
+      .jpeg({ quality: 80 })
       .toFile(thumbnailPath);
     return true;
   } catch (error) {
@@ -96,28 +96,178 @@ const getImageMetadata = async (imagePath) => {
     };
   } catch (error) {
     console.error('Error getting image metadata:', error);
-    return {};
+    return null;
   }
 };
 
-// Helper function to get text file word count
-const getWordCount = async (filePath, mimeType) => {
+// Helper function to get word count from text files
+const getWordCount = async (filePath) => {
   try {
-    if (mimeType === 'application/pdf') {
-      return 0; // PDF word count would require additional library
-    }
-    
     const content = await fs.readFile(filePath, 'utf-8');
-    const words = content.trim().split(/\s+/).filter(word => word.length > 0);
-    return words.length;
+    return content.split(/\s+/).filter(word => word.length > 0).length;
   } catch (error) {
-    console.error('Error counting words:', error);
+    console.error('Error reading file for word count:', error);
     return 0;
   }
 };
 
+// Import content from AO3
+router.post('/import-ao3', optionalAuth, [
+  body('ao3Url')
+    .notEmpty()
+    .isURL()
+    .contains('archiveofourown.org')
+    .withMessage('Valid AO3 URL is required'),
+  body('title')
+    .notEmpty()
+    .isLength({ max: 200 })
+    .withMessage('Title is required and must be less than 200 characters'),
+  body('author')
+    .optional()
+    .isLength({ max: 100 })
+    .withMessage('Author name must be less than 100 characters'),
+  body('tags')
+    .optional()
+    .custom((value) => {
+      if (value && typeof value === 'string') {
+        const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        if (tags.length > 20) {
+          throw new Error('Maximum 20 tags allowed');
+        }
+        if (tags.some(tag => tag.length > 50)) {
+          throw new Error('Each tag must be less than 50 characters');
+        }
+      }
+      return true;
+    }),
+  body('rating')
+    .optional()
+    .isIn(['G', 'PG', 'T', 'M', 'E', 'XXX'])
+    .withMessage('Invalid rating'),
+  body('warnings')
+    .optional()
+    .custom((value) => {
+      if (value && Array.isArray(value)) {
+        const validWarnings = ['NSFW', 'Gore', 'Noncon', 'Kink', 'Other'];
+        if (!value.every(warning => validWarnings.includes(warning))) {
+          throw new Error('Invalid warning type');
+        }
+      }
+      return true;
+    }),
+  body('description')
+    .optional()
+    .isLength({ max: 2000 })
+    .withMessage('Description must be less than 2000 characters'),
+  body('isNSFW')
+    .optional()
+    .isBoolean()
+    .withMessage('isNSFW must be a boolean')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const {
+      ao3Url,
+      title,
+      author,
+      tags,
+      rating,
+      warnings,
+      description,
+      isNSFW
+    } = req.body;
+
+    // Extract work ID from AO3 URL
+    const workIdMatch = ao3Url.match(/works\/(\d+)/);
+    if (!workIdMatch) {
+      return res.status(400).json({ message: 'Invalid AO3 URL format' });
+    }
+    const workId = workIdMatch[1];
+
+    // Process tags
+    const processedTags = tags ? 
+      tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0) : 
+      [];
+
+    // Process warnings
+    const processedWarnings = warnings ? 
+      (Array.isArray(warnings) ? warnings : [warnings]) : 
+      [];
+
+    // Create a unique filename for the imported content
+    const filename = `ao3_import_${workId}_${uuidv4()}.txt`;
+    const filePath = path.join('uploads/fics', filename);
+
+    // Create a placeholder text file with AO3 reference
+    const placeholderContent = `This fanfiction was imported from AO3.\n\nOriginal URL: ${ao3Url}\n\nTitle: ${title}\nAuthor: ${author || 'Unknown'}\n\nNote: This is a reference to the original work on Archive of Our Own. Please visit the original URL to read the full content.`;
+    
+    await fs.writeFile(filePath, placeholderContent, 'utf-8');
+
+    // Create content object
+    const contentData = {
+      title,
+      author: author || 'Anonymous',
+      contentType: 'fic',
+      filename: filename,
+      originalFilename: `${title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`,
+      fileUrl: `/uploads/fics/${filename}`,
+      fileSize: Buffer.byteLength(placeholderContent, 'utf-8'),
+      mimeType: 'text/plain',
+      tags: processedTags,
+      rating: rating || 'T',
+      warnings: processedWarnings,
+      description: description || '',
+      isNSFW: isNSFW === 'true' || isNSFW === true,
+      isAnonymized: false,
+      uploader: req.user ? req.user.userId : null,
+      uploaderIP: req.ip || req.connection.remoteAddress,
+      metadata: {
+        wordCount: placeholderContent.split(/\s+/).length,
+        chapters: 1,
+        ao3Url: ao3Url,
+        ao3WorkId: workId,
+        importedAt: new Date()
+      }
+    };
+
+    // Save to database
+    const content = new Content(contentData);
+    await content.save();
+
+    // Update user stats if logged in
+    if (req.user) {
+      await User.findByIdAndUpdate(req.user.userId, {
+        $push: { uploads: content._id },
+        $inc: { 'stats.totalUploads': 1 }
+      });
+    }
+
+    res.status(201).json({
+      message: 'Content imported successfully from AO3',
+      content: {
+        _id: content._id,
+        title: content.title,
+        contentType: content.contentType,
+        fileUrl: content.fileUrl,
+        tags: content.tags,
+        rating: content.rating,
+        warnings: content.warnings,
+        ao3Url: ao3Url,
+        createdAt: content.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('AO3 import error:', error);
+    res.status(500).json({ message: 'Server error during AO3 import' });
+  }
+});
+
 // Upload content
-router.post('/upload', optionalAuth, upload.single('file'), [
+router.post('/upload', upload.single('file'), [
   body('title')
     .notEmpty()
     .isLength({ max: 200 })
@@ -165,19 +315,11 @@ router.post('/upload', optionalAuth, upload.single('file'), [
   body('isNSFW')
     .optional()
     .isBoolean()
-    .withMessage('isNSFW must be a boolean'),
-  body('isAnonymized')
-    .optional()
-    .isBoolean()
-    .withMessage('isAnonymized must be a boolean')
+    .withMessage('isNSFW must be a boolean')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      // Clean up uploaded file if validation fails
-      if (req.file) {
-        await fs.unlink(req.file.path).catch(() => {});
-      }
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -193,8 +335,7 @@ router.post('/upload', optionalAuth, upload.single('file'), [
       rating,
       warnings,
       description,
-      isNSFW,
-      isAnonymized
+      isNSFW
     } = req.body;
 
     // Process tags
@@ -222,25 +363,29 @@ router.post('/upload', optionalAuth, upload.single('file'), [
       warnings: processedWarnings,
       description: description || '',
       isNSFW: isNSFW === 'true' || isNSFW === true,
-      isAnonymized: isAnonymized === 'true' || isAnonymized === true,
+      isAnonymized: false,
       uploader: req.user ? req.user.userId : null,
-      uploaderIP: req.ip || req.connection.remoteAddress,
-      metadata: {}
+      uploaderIP: req.ip || req.connection.remoteAddress
     };
 
     // Handle art-specific processing
     if (contentType === 'art') {
-      const imageMetadata = await getImageMetadata(req.file.path);
-      contentData.metadata = {
-        width: imageMetadata.width,
-        height: imageMetadata.height
-      };
+      const imagePath = req.file.path;
+      const metadata = await getImageMetadata(imagePath);
+      
+      if (metadata) {
+        contentData.metadata = {
+          width: metadata.width,
+          height: metadata.height,
+          format: metadata.format
+        };
+      }
 
       // Create thumbnail
-      const thumbnailFilename = `thumb_${req.file.filename.replace(path.extname(req.file.filename), '.jpg')}`;
+      const thumbnailFilename = `thumb_${req.file.filename.replace(/\.[^/.]+$/, '')}.jpg`;
       const thumbnailPath = path.join('uploads/thumbnails', thumbnailFilename);
       
-      const thumbnailCreated = await createThumbnail(req.file.path, thumbnailPath);
+      const thumbnailCreated = await createThumbnail(imagePath, thumbnailPath);
       if (thumbnailCreated) {
         contentData.thumbnailUrl = `/uploads/thumbnails/${thumbnailFilename}`;
       }
@@ -248,10 +393,10 @@ router.post('/upload', optionalAuth, upload.single('file'), [
 
     // Handle fic-specific processing
     if (contentType === 'fic') {
-      const wordCount = await getWordCount(req.file.path, req.file.mimetype);
+      const wordCount = await getWordCount(req.file.path);
       contentData.metadata = {
-        wordCount: wordCount,
-        chapters: 1 // Default to 1, could be enhanced to detect chapters
+        wordCount,
+        chapters: 1
       };
     }
 
@@ -286,14 +431,18 @@ router.post('/upload', optionalAuth, upload.single('file'), [
     
     // Clean up uploaded file on error
     if (req.file) {
-      await fs.unlink(req.file.path).catch(() => {});
+      try {
+        await fs.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting uploaded file:', unlinkError);
+      }
     }
     
     res.status(500).json({ message: 'Server error during upload' });
   }
 });
 
-// Get content list with filtering and pagination
+// Get all content with pagination and filtering
 router.get('/', [
   query('page')
     .optional()
@@ -306,15 +455,23 @@ router.get('/', [
   query('contentType')
     .optional()
     .isIn(['art', 'fic'])
-    .withMessage('Content type must be art or fic'),
+    .withMessage('Content type must be either art or fic'),
   query('rating')
     .optional()
     .isIn(['G', 'PG', 'T', 'M', 'E', 'XXX'])
     .withMessage('Invalid rating'),
+  query('tags')
+    .optional()
+    .isString()
+    .withMessage('Tags must be a string'),
   query('sortBy')
     .optional()
-    .isIn(['newest', 'oldest', 'popular', 'views'])
-    .withMessage('Invalid sort option')
+    .isIn(['createdAt', 'title', 'rating'])
+    .withMessage('Invalid sort field'),
+  query('sortOrder')
+    .optional()
+    .isIn(['asc', 'desc'])
+    .withMessage('Sort order must be asc or desc')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -328,47 +485,22 @@ router.get('/', [
       contentType,
       rating,
       tags,
-      warnings,
-      search,
-      sortBy = 'newest',
-      showNSFW = 'false'
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
     } = req.query;
 
     // Build filter object
-    const filter = { isActive: true };
-    
+    const filter = {};
     if (contentType) filter.contentType = contentType;
     if (rating) filter.rating = rating;
     if (tags) {
       const tagArray = tags.split(',').map(tag => tag.trim().toLowerCase());
       filter.tags = { $in: tagArray };
     }
-    if (warnings) {
-      const warningArray = warnings.split(',');
-      filter.warnings = { $in: warningArray };
-    }
-    if (showNSFW !== 'true') {
-      filter.isNSFW = false;
-    }
-    if (search) {
-      filter.$text = { $search: search };
-    }
 
     // Build sort object
-    let sort = {};
-    switch (sortBy) {
-      case 'oldest':
-        sort = { createdAt: 1 };
-        break;
-      case 'popular':
-        sort = { likes: -1, createdAt: -1 };
-        break;
-      case 'views':
-        sort = { views: -1, createdAt: -1 };
-        break;
-      default:
-        sort = { createdAt: -1 };
-    }
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -377,7 +509,7 @@ router.get('/', [
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit))
-        .populate('uploader', 'username displayName')
+        .populate('uploader', 'username')
         .select('-uploaderIP'),
       Content.countDocuments(filter)
     ]);
@@ -385,165 +517,78 @@ router.get('/', [
     res.json({
       content,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
       }
     });
   } catch (error) {
-    console.error('Get content error:', error);
+    console.error('Error fetching content:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get single content item
-router.get('/:id', optionalAuth, async (req, res) => {
+// Get content by ID
+router.get('/:id', async (req, res) => {
   try {
     const content = await Content.findById(req.params.id)
-      .populate('uploader', 'username displayName avatar')
-      .populate({
-        path: 'comments',
-        populate: {
-          path: 'author',
-          select: 'username displayName avatar'
-        }
-      });
-
-    if (!content || !content.isActive) {
-      return res.status(404).json({ message: 'Content not found' });
-    }
-
-    // Increment view count
-    await content.incrementViews();
-
-    // Check if user has liked/bookmarked this content
-    let userInteractions = {};
-    if (req.user) {
-      userInteractions = {
-        hasLiked: content.likedBy.includes(req.user.userId),
-        hasBookmarked: false // Will be set below
-      };
-      
-      const user = await User.findById(req.user.userId);
-      if (user) {
-        userInteractions.hasBookmarked = user.bookmarks.includes(content._id);
-      }
-    }
-
-    res.json({
-      content: {
-        ...content.toObject(),
-        uploaderIP: undefined // Remove IP from response
-      },
-      userInteractions
-    });
-  } catch (error) {
-    console.error('Get content error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Like/unlike content
-router.post('/:id/like', auth, async (req, res) => {
-  try {
-    const content = await Content.findById(req.params.id);
-    if (!content || !content.isActive) {
-      return res.status(404).json({ message: 'Content not found' });
-    }
-
-    await content.toggleLike(req.user.userId);
+      .populate('uploader', 'username')
+      .select('-uploaderIP');
     
-    res.json({
-      message: 'Like toggled successfully',
-      likes: content.likes,
-      hasLiked: content.likedBy.includes(req.user.userId)
-    });
-  } catch (error) {
-    console.error('Like content error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Bookmark/unbookmark content
-router.post('/:id/bookmark', auth, async (req, res) => {
-  try {
-    const content = await Content.findById(req.params.id);
-    if (!content || !content.isActive) {
-      return res.status(404).json({ message: 'Content not found' });
-    }
-
-    const user = await User.findById(req.user.userId);
-    const isBookmarked = user.bookmarks.includes(content._id);
-    
-    if (isBookmarked) {
-      await user.removeFromBookmarks(content._id);
-    } else {
-      await user.addToBookmarks(content._id);
-    }
-    
-    res.json({
-      message: 'Bookmark toggled successfully',
-      hasBookmarked: !isBookmarked
-    });
-  } catch (error) {
-    console.error('Bookmark content error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Flag content
-router.post('/:id/flag', optionalAuth, [
-  body('reason')
-    .notEmpty()
-    .isLength({ max: 500 })
-    .withMessage('Flag reason is required and must be less than 500 characters')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const content = await Content.findById(req.params.id);
-    if (!content || !content.isActive) {
-      return res.status(404).json({ message: 'Content not found' });
-    }
-
-    content.flagged = true;
-    content.flagReason = req.body.reason;
-    await content.save();
-    
-    res.json({ message: 'Content flagged for review' });
-  } catch (error) {
-    console.error('Flag content error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Delete content (only by uploader or admin)
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const content = await Content.findById(req.params.id);
     if (!content) {
       return res.status(404).json({ message: 'Content not found' });
     }
 
-    // Check if user is the uploader or admin
-    const isOwner = content.uploader && content.uploader.equals(req.user.userId);
-    const isAdmin = req.userDoc && req.userDoc.role === 'admin';
+    res.json(content);
+  } catch (error) {
+    console.error('Error fetching content:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete content
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const content = await Content.findById(req.params.id);
     
-    if (!isOwner && !isAdmin) {
+    if (!content) {
+      return res.status(404).json({ message: 'Content not found' });
+    }
+
+    // Check if user owns the content or is admin
+    if (content.uploader.toString() !== req.user.userId && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to delete this content' });
     }
 
-    // Soft delete
-    content.isActive = false;
-    await content.save();
+    // Delete associated files
+    try {
+      if (content.filename) {
+        const filePath = path.join('uploads', content.contentType === 'art' ? 'art' : 'fics', content.filename);
+        await fs.unlink(filePath);
+      }
+      
+      if (content.thumbnailUrl) {
+        const thumbnailPath = content.thumbnailUrl.replace('/uploads/', 'uploads/');
+        await fs.unlink(thumbnailPath);
+      }
+    } catch (fileError) {
+      console.error('Error deleting files:', fileError);
+    }
+
+    await Content.findByIdAndDelete(req.params.id);
     
+    // Update user stats
+    if (content.uploader) {
+      await User.findByIdAndUpdate(content.uploader, {
+        $pull: { uploads: content._id },
+        $inc: { 'stats.totalUploads': -1 }
+      });
+    }
+
     res.json({ message: 'Content deleted successfully' });
   } catch (error) {
-    console.error('Delete content error:', error);
+    console.error('Error deleting content:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
