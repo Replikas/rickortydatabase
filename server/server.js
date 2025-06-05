@@ -125,10 +125,12 @@ app.use('/api/admin', adminRoutes);
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
+  // In Docker container, client build files are copied to ./public
+  const staticPath = process.env.DOCKER_ENV ? path.join(__dirname, 'public') : path.join(__dirname, '../client/build');
+  app.use(express.static(staticPath));
   
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+    res.sendFile(path.join(staticPath, 'index.html'));
   });
 }
 

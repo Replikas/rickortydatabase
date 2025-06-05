@@ -59,6 +59,9 @@ WORKDIR /app
 COPY --chown=nodejs:nodejs package*.json ./
 COPY --chown=nodejs:nodejs scripts/ ./scripts/
 
+# Set environment variable for Docker
+ENV DOCKER_ENV=true
+
 # Switch to non-root user
 USER nodejs
 
