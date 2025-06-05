@@ -40,24 +40,19 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const contentType = req.body.contentType;
+  // Accept all files initially, we'll validate based on contentType in the route handler
+  // This is because req.body.contentType is not available during fileFilter execution in multipart requests
+  const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+  const textTypes = ['text/plain', 'text/markdown', 'application/pdf'];
+  const allowedTypes = [...imageTypes, ...textTypes];
   
-  if (contentType === 'art') {
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type for art. Only PNG, JPG, JPEG, and GIF are allowed.'), false);
-    }
-  } else if (contentType === 'fic') {
-    const allowedTypes = ['text/plain', 'text/markdown', 'application/pdf'];
-    if (allowedTypes.includes(file.mimetype) || file.originalname.endsWith('.md') || file.originalname.endsWith('.txt')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type for fic. Only TXT, MD, and PDF are allowed.'), false);
-    }
+  // Check if file type is generally allowed
+  if (allowedTypes.includes(file.mimetype) || 
+      file.originalname.endsWith('.md') || 
+      file.originalname.endsWith('.txt')) {
+    cb(null, true);
   } else {
-    cb(new Error('Invalid content type'), false);
+    cb(new Error('Invalid file type. Only images (PNG, JPG, JPEG, GIF) and text files (TXT, MD, PDF) are allowed.'), false);
   }
 };
 
@@ -362,6 +357,31 @@ router.post('/upload', upload.single('file'), [
       description,
       isNSFW
     } = req.body;
+
+    // Validate file type matches content type
+    const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+    const textTypes = ['text/plain', 'text/markdown', 'application/pdf'];
+    
+    if (contentType === 'art' && !imageTypes.includes(req.file.mimetype)) {
+      // Clean up uploaded file
+      try {
+        await fs.unlink(req.file.path);
+      } catch (err) {
+        console.error('Error deleting invalid file:', err);
+      }
+      return res.status(400).json({ message: 'Invalid file type for art. Only PNG, JPG, JPEG, and GIF are allowed.' });
+    }
+    
+    if (contentType === 'fic' && !textTypes.includes(req.file.mimetype) && 
+        !req.file.originalname.endsWith('.md') && !req.file.originalname.endsWith('.txt')) {
+      // Clean up uploaded file
+      try {
+        await fs.unlink(req.file.path);
+      } catch (err) {
+        console.error('Error deleting invalid file:', err);
+      }
+      return res.status(400).json({ message: 'Invalid file type for fic. Only TXT, MD, and PDF are allowed.' });
+    }
 
     // Process tags
     const processedTags = tags ? 
