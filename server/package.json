@@ -11,7 +11,9 @@
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "seed": "node scripts/seed.js",
-    "clean": "node scripts/clean.js"
+    "clean": "node scripts/clean.js",
+    "setup-admin": "node setup-admin.js",
+    "postinstall": "node setup-admin.js || echo 'Admin setup will run after first user registration'"
   },
   "dependencies": {
     "express": "^4.18.2",

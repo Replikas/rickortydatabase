@@ -37,6 +37,11 @@ const Navbar = () => {
                 <Link to="/upload" className="text-white hover:text-green-200 px-3 py-2 rounded-md">
                   Upload
                 </Link>
+                {user && user.role === 'admin' && (
+                  <Link to="/admin" className="text-red-300 hover:text-red-100 px-3 py-2 rounded-md">
+                    Admin Panel
+                  </Link>
+                )}
                 <Link to="/profile" className="text-white hover:text-green-200 px-3 py-2 rounded-md">
                   Profile
                 </Link>

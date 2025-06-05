@@ -35,9 +35,8 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Skip API call for now since backend might not be available
-      // TODO: Uncomment when backend /api/auth/me endpoint is ready
-      // fetchUser();
+      // Fetch user data including role information
+      fetchUser();
     }
   }, [fetchUser]);
 

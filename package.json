@@ -5,6 +5,7 @@
   "main": "server/index.js",
   "scripts": {
     "setup": "node scripts/setup-env.js",
+    "make-admin": "node scripts/make-admin.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",

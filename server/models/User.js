@@ -150,6 +150,7 @@ userSchema.methods.getPublicProfile = function() {
     displayName: this.displayName,
     bio: this.bio,
     avatar: this.avatar,
+    role: this.role,
     stats: this.stats,
     createdAt: this.createdAt
   };

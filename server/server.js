@@ -14,6 +14,7 @@ const contentRoutes = require('./routes/content');
 const searchRoutes = require('./routes/search');
 const userRoutes = require('./routes/users');
 const commentRoutes = require('./routes/comments');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -119,6 +120,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
