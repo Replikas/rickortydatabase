@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#22c55e" />
+    <meta name="description" content="Rickorty Database - A comprehensive fanworks database for Rick and Morty content, featuring art galleries, fanfiction archives, and community interactions." />
+    <meta name="keywords" content="Rick and Morty, fanart, fanfiction, database, community, gallery, archive" />
+    <meta name="author" content="Rickorty Database Team" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rickorty-database.com/" />
+    <meta property="og:title" content="Rickorty Database - Rick and Morty Fanworks" />
+    <meta property="og:description" content="Discover and share Rick and Morty fanart, fanfiction, and more in our comprehensive community database." />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://rickorty-database.com/" />
+    <meta property="twitter:title" content="Rickorty Database - Rick and Morty Fanworks" />
+    <meta property="twitter:description" content="Discover and share Rick and Morty fanart, fanfiction, and more in our comprehensive community database." />
+    <meta property="twitter:image" content="%PUBLIC_URL%/og-image.png" />
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Favicon variations -->
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png">
+    
+    <title>Rickorty Database - Rick and Morty Fanworks</title>
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Rickorty Database",
+      "description": "A comprehensive fanworks database for Rick and Morty content",
+      "url": "https://rickorty-database.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://rickorty-database.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    
+    <!-- Dark mode script to prevent flash -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #1f2937;
+        color: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        font-family: system-ui, sans-serif;
+        text-align: center;
+        padding: 2rem;
+      ">
+        <h1 style="font-size: 2rem; margin-bottom: 1rem;">JavaScript Required</h1>
+        <p style="font-size: 1.125rem; margin-bottom: 2rem; max-width: 600px; line-height: 1.6;">
+          Rickorty Database requires JavaScript to function properly. 
+          Please enable JavaScript in your browser settings and reload the page.
+        </p>
+        <p style="color: #9ca3af;">
+          Wubba lubba dub dub! 🛸
+        </p>
+      </div>
+    </noscript>
+    
+    <!-- Root element for React app -->
+    <div id="root"></div>
+    
+    <!-- Loading fallback -->
+    <div id="loading-fallback" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #1f2937;
+      color: #f9fafb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-family: system-ui, sans-serif;
+    ">
+      <div style="
+        width: 40px;
+        height: 40px;
+        border: 3px solid #374151;
+        border-top: 3px solid #22c55e;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+      "></div>
+      <p style="color: #9ca3af;">Loading Rickorty Database...</p>
+    </div>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* Hide loading fallback when React loads */
+      #root:not(:empty) + #loading-fallback {
+        display: none;
+      }
+    </style>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('%PUBLIC_URL%/sw.js')
+            .then(function(registration) {
+              console.log('SW registered: ', registration);
+            })
+            .catch(function(registrationError) {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

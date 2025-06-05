@@ -1,0 +1,96 @@
+{
+  "short_name": "Rickorty DB",
+  "name": "Rickorty Database - Rick and Morty Fanworks",
+  "description": "A comprehensive fanworks database for Rick and Morty content, featuring art galleries, fanfiction archives, and community interactions.",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#22c55e",
+  "background_color": "#1f2937",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["entertainment", "social", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "screenshot-narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Art",
+      "short_name": "Art",
+      "description": "Browse Rick and Morty fan art",
+      "url": "/browse?type=art",
+      "icons": [
+        {
+          "src": "icon-art.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Browse Fics",
+      "short_name": "Fics",
+      "description": "Browse Rick and Morty fanfiction",
+      "url": "/browse?type=fic",
+      "icons": [
+        {
+          "src": "icon-fic.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Upload",
+      "short_name": "Upload",
+      "description": "Upload your fanworks",
+      "url": "/upload",
+      "icons": [
+        {
+          "src": "icon-upload.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "short_name": "Search",
+      "description": "Search for content",
+      "url": "/search",
+      "icons": [
+        {
+          "src": "icon-search.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

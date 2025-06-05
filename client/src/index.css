@@ -1,0 +1,460 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+/* Base styles */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply font-sans antialiased;
+    @apply bg-gray-50 text-gray-900;
+    @apply dark:bg-gray-900 dark:text-gray-100;
+    @apply transition-colors duration-200;
+  }
+  
+  /* Custom scrollbar for webkit browsers */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+  
+  /* Focus styles */
+  *:focus {
+    @apply outline-none;
+  }
+  
+  *:focus-visible {
+    @apply ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900;
+  }
+  
+  /* Selection styles */
+  ::selection {
+    @apply bg-primary-200 text-primary-900;
+  }
+  
+  ::-moz-selection {
+    @apply bg-primary-200 text-primary-900;
+  }
+  
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold leading-tight;
+  }
+  
+  h1 {
+    @apply text-3xl md:text-4xl lg:text-5xl;
+  }
+  
+  h2 {
+    @apply text-2xl md:text-3xl lg:text-4xl;
+  }
+  
+  h3 {
+    @apply text-xl md:text-2xl lg:text-3xl;
+  }
+  
+  h4 {
+    @apply text-lg md:text-xl lg:text-2xl;
+  }
+  
+  h5 {
+    @apply text-base md:text-lg lg:text-xl;
+  }
+  
+  h6 {
+    @apply text-sm md:text-base lg:text-lg;
+  }
+  
+  /* Links */
+  a {
+    @apply transition-colors duration-200;
+  }
+  
+  /* Form elements */
+  input, textarea, select {
+    @apply transition-all duration-200;
+  }
+  
+  /* Buttons */
+  button {
+    @apply transition-all duration-200;
+  }
+  
+  /* Images */
+  img {
+    @apply max-w-full h-auto;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg;
+    @apply transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply dark:bg-primary-500 dark:hover:bg-primary-600;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500;
+    @apply dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  
+  .btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  .btn-xl {
+    @apply px-8 py-4 text-lg;
+  }
+  
+  /* Form controls */
+  .form-input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-lg;
+    @apply focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100;
+    @apply dark:focus:ring-primary-400 dark:focus:border-primary-400;
+  }
+  
+  .form-textarea {
+    @apply form-input resize-vertical;
+  }
+  
+  .form-select {
+    @apply form-input;
+  }
+  
+  .form-checkbox {
+    @apply rounded border-gray-300 text-primary-600 focus:ring-primary-500;
+    @apply dark:border-gray-600 dark:bg-gray-800;
+  }
+  
+  .form-radio {
+    @apply border-gray-300 text-primary-600 focus:ring-primary-500;
+    @apply dark:border-gray-600 dark:bg-gray-800;
+  }
+  
+  /* Card styles */
+  .card {
+    @apply bg-white rounded-xl shadow-card border border-gray-200;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+    @apply transition-all duration-200;
+  }
+  
+  .card-hover {
+    @apply hover:shadow-card-hover hover:-translate-y-1;
+  }
+  
+  .card-body {
+    @apply p-6;
+  }
+  
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-200 dark:border-gray-700;
+  }
+  
+  .card-footer {
+    @apply px-6 py-4 border-t border-gray-200 dark:border-gray-700;
+  }
+  
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200;
+  }
+  
+  .badge-secondary {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200;
+  }
+  
+  .badge-success {
+    @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+  }
+  
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+  }
+  
+  .badge-danger {
+    @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+  }
+  
+  /* Alert styles */
+  .alert {
+    @apply p-4 rounded-lg border;
+  }
+  
+  .alert-info {
+    @apply bg-blue-50 border-blue-200 text-blue-800;
+    @apply dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200;
+  }
+  
+  .alert-success {
+    @apply bg-green-50 border-green-200 text-green-800;
+    @apply dark:bg-green-900/20 dark:border-green-800 dark:text-green-200;
+  }
+  
+  .alert-warning {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800;
+    @apply dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200;
+  }
+  
+  .alert-danger {
+    @apply bg-red-50 border-red-200 text-red-800;
+    @apply dark:bg-red-900/20 dark:border-red-800 dark:text-red-200;
+  }
+  
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+  }
+  
+  /* Content grid */
+  .content-grid {
+    @apply grid gap-6;
+    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  /* Masonry grid for art */
+  .masonry-grid {
+    @apply columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6;
+  }
+  
+  .masonry-item {
+    @apply break-inside-avoid mb-6;
+  }
+  
+  /* Navigation styles */
+  .nav-link {
+    @apply px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200;
+    @apply text-gray-700 hover:text-gray-900 hover:bg-gray-100;
+    @apply dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-800;
+  }
+  
+  .nav-link-active {
+    @apply bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200;
+  }
+  
+  /* Dropdown styles */
+  .dropdown {
+    @apply absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+    @apply z-50;
+  }
+  
+  .dropdown-item {
+    @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+    @apply transition-colors duration-200;
+  }
+  
+  /* Modal styles */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 z-50;
+    @apply flex items-center justify-center p-4;
+  }
+  
+  .modal-content {
+    @apply bg-white rounded-xl shadow-xl max-w-lg w-full max-h-screen overflow-y-auto;
+    @apply dark:bg-gray-800;
+  }
+  
+  /* Tooltip styles */
+  .tooltip {
+    @apply absolute z-10 px-2 py-1 text-xs text-white bg-gray-900 rounded;
+    @apply dark:bg-gray-700;
+    @apply pointer-events-none;
+  }
+}
+
+/* Utility styles */
+@layer utilities {
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent;
+  }
+  
+  /* Gradient backgrounds */
+  .gradient-bg {
+    @apply bg-gradient-to-br from-primary-500 to-accent-500;
+  }
+  
+  .gradient-bg-dark {
+    @apply bg-gradient-to-br from-gray-800 to-gray-900;
+  }
+  
+  /* Aspect ratios */
+  .aspect-square {
+    aspect-ratio: 1 / 1;
+  }
+  
+  .aspect-video {
+    aspect-ratio: 16 / 9;
+  }
+  
+  .aspect-photo {
+    aspect-ratio: 4 / 3;
+  }
+  
+  /* Safe area for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Print styles */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+  }
+}
+
+/* Custom animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .shimmer {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200px 100%;
+}
+
+/* Rick and Morty themed styles */
+.portal-effect {
+  @apply relative overflow-hidden;
+}
+
+.portal-effect::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-green-400 via-blue-500 to-purple-600;
+  @apply opacity-20 animate-pulse;
+  border-radius: inherit;
+}
+
+.science-glow {
+  @apply shadow-glow;
+  animation: pulseGlow 2s ease-in-out infinite alternate;
+}
+
+/* Content type specific styles */
+.art-card {
+  @apply card card-hover;
+  @apply overflow-hidden;
+}
+
+.fic-card {
+  @apply card card-hover;
+  @apply border-l-4 border-l-accent-500;
+}
+
+/* Rating colors */
+.rating-g {
+  @apply text-green-600 dark:text-green-400;
+}
+
+.rating-pg {
+  @apply text-blue-600 dark:text-blue-400;
+}
+
+.rating-pg13 {
+  @apply text-yellow-600 dark:text-yellow-400;
+}
+
+.rating-r {
+  @apply text-orange-600 dark:text-orange-400;
+}
+
+.rating-nc17 {
+  @apply text-red-600 dark:text-red-400;
+}
+
+/* NSFW indicator */
+.nsfw-blur {
+  @apply filter blur-md hover:blur-none transition-all duration-300;
+}
+
+/* Responsive text */
+.text-responsive {
+  @apply text-sm sm:text-base lg:text-lg;
+}
+
+/* Container utilities */
+.container-narrow {
+  @apply max-w-4xl mx-auto px-4;
+}
+
+.container-wide {
+  @apply max-w-7xl mx-auto px-4;
+}
+
+/* Loading states */
+.loading-skeleton {
+  @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+}
+
+/* Error states */
+.error-text {
+  @apply text-red-600 dark:text-red-400 text-sm;
+}
+
+/* Success states */
+.success-text {
+  @apply text-green-600 dark:text-green-400 text-sm;
+}
