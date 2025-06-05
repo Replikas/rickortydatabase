@@ -16,8 +16,8 @@ const TermsOfService = () => {
               </p>
               
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
-                <p className="text-yellow-800 dark:text-yellow-200 font-semibold">
-                  Last Updated: June 15, 2024
+                <p className="text-green-800 dark:text-green-200 font-semibold">
+                  Last Updated: June 5, 2025
                 </p>
                 <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-2">
                   Please read these terms carefully before using our platform.

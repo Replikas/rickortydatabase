@@ -17,7 +17,7 @@ const PrivacyPolicy = () => {
               
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
                 <p className="text-green-800 dark:text-green-200 font-semibold">
-                  Last Updated: June 15, 2024
+                  Last Updated: June 5, 2025
                 </p>
                 <p className="text-green-700 dark:text-green-300 text-sm mt-2">
                   We are committed to protecting your privacy and being transparent about our data practices.

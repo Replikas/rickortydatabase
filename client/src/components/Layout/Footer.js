@@ -62,7 +62,7 @@ const Footer = () => {
         <div className="mt-8 pt-8 border-t border-gray-700">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2024 Rick & Morty Database. All rights reserved.
+              © 2025 Rick & Morty Database. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <Link to="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">
