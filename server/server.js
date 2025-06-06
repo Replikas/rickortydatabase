@@ -1,25 +1,33 @@
+/**
+ * Rick and Morty Database Server
+ * Main server file with PostgreSQL integration
+ */
+
+require('dotenv').config();
+
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const morgan = require('morgan');
 const path = require('path');
-require('dotenv').config();
 
-// Import routes
+// Database connection
+const { initializeDatabase, closeDatabase } = require('./config/database');
+
+// Routes
 const authRoutes = require('./routes/auth');
-const contentRoutes = require('./routes/content');
-const searchRoutes = require('./routes/search');
 const userRoutes = require('./routes/users');
+const contentRoutes = require('./routes/content');
 const commentRoutes = require('./routes/comments');
+const uploadRoutes = require('./routes/upload');
 const adminRoutes = require('./routes/admin');
 
+// Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Trust proxy for rate limiting behind reverse proxy
+// Trust proxy for Railway deployment
 app.set('trust proxy', 1);
 
 // Security middleware
@@ -35,32 +43,35 @@ app.use(helmet({
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
+      frameSrc: ["'none'"]
+    }
+  }
 }));
 
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
+    const allowedOrigins = [
+      process.env.CLIENT_URL,
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://rickandmortydatabase.netlify.app',
+      'https://rickandmortydatabase.space'
+    ].filter(Boolean);
+    
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
     
-    const allowedOrigins = [
-      process.env.CLIENT_URL || 'http://localhost:3000',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'https://rickortydatabase.space'
-    ];
-    
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 
 app.use(cors(corsOptions));
@@ -74,220 +85,248 @@ const limiter = rateLimit({
     retryAfter: Math.ceil((parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / 1000)
   },
   standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for static files
-    return req.url.startsWith('/uploads/') || req.url.startsWith('/static/');
-  }
+  legacyHeaders: false
 });
 
-app.use(limiter);
+app.use('/api/', limiter);
 
 // Compression middleware
 app.use(compression());
 
 // Logging middleware
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-} else {
+if (process.env.NODE_ENV === 'production') {
   app.use(morgan('combined'));
+} else {
+  app.use(morgan('dev'));
 }
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Static file serving
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  maxAge: '1d',
-  etag: true,
-  lastModified: true
+app.use(express.json({ 
+  limit: process.env.MAX_JSON_SIZE || '10mb',
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf);
+    } catch (e) {
+      res.status(400).json({ error: 'Invalid JSON' });
+      return;
+    }
+  }
+}));
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: process.env.MAX_URL_ENCODED_SIZE || '10mb' 
 }));
 
+// Static file serving
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0'
-  });
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    const { query } = require('./config/database');
+    await query('SELECT 1');
+    
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+      database: 'connected'
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Database connection failed'
+    });
+  }
 });
 
-// API routes
+// API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/content', contentRoutes);
-app.use('/api/search', searchRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/content', contentRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
-
-// Serve React app in production
-if (process.env.NODE_ENV === 'production') {
-  // In Docker container, client build files are copied to ./public
-  const staticPath = process.env.DOCKER_ENV ? path.join(__dirname, 'public') : path.join(__dirname, '../client/build');
-  app.use(express.static(staticPath));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(staticPath, 'index.html'));
-  });
-}
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
   res.status(404).json({
     error: 'API endpoint not found',
     path: req.originalUrl,
-    method: req.method
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
 });
 
-// Global error handler
+// Serve React app in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../client/build')));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+  });
+}
+
+// Global error handling middleware
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
-  
-  // Mongoose validation error
-  if (error.name === 'ValidationError') {
-    const errors = Object.values(error.errors).map(err => err.message);
-    return res.status(400).json({
-      error: 'Validation Error',
-      details: errors
-    });
+
+  // PostgreSQL specific errors
+  if (error.code) {
+    switch (error.code) {
+      case '23505': // Unique constraint violation
+        return res.status(409).json({
+          error: 'Duplicate entry',
+          message: 'A record with this information already exists'
+        });
+      case '23503': // Foreign key constraint violation
+        return res.status(400).json({
+          error: 'Invalid reference',
+          message: 'Referenced record does not exist'
+        });
+      case '23502': // Not null constraint violation
+        return res.status(400).json({
+          error: 'Missing required field',
+          message: 'Required field cannot be empty'
+        });
+      case '22001': // String data too long
+        return res.status(400).json({
+          error: 'Data too long',
+          message: 'Input data exceeds maximum length'
+        });
+      case '08006': // Connection failure
+      case '08001': // Unable to connect
+        return res.status(503).json({
+          error: 'Database connection error',
+          message: 'Unable to connect to database'
+        });
+    }
   }
-  
-  // Mongoose duplicate key error
-  if (error.code === 11000) {
-    const field = Object.keys(error.keyValue)[0];
-    return res.status(400).json({
-      error: `${field} already exists`,
-      field: field
-    });
-  }
-  
+
   // JWT errors
   if (error.name === 'JsonWebTokenError') {
     return res.status(401).json({
-      error: 'Invalid token'
+      error: 'Invalid token',
+      message: 'Authentication token is invalid'
     });
   }
-  
+
   if (error.name === 'TokenExpiredError') {
     return res.status(401).json({
-      error: 'Token expired'
+      error: 'Token expired',
+      message: 'Authentication token has expired'
     });
   }
-  
-  // Multer errors
+
+  // Multer errors (file upload)
   if (error.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({
+    return res.status(413).json({
       error: 'File too large',
-      maxSize: '50MB'
+      message: `File size exceeds limit of ${process.env.MAX_FILE_SIZE || '10MB'}`
     });
   }
-  
+
   if (error.code === 'LIMIT_FILE_COUNT') {
-    return res.status(400).json({
+    return res.status(413).json({
       error: 'Too many files',
-      maxFiles: 1
+      message: 'Number of files exceeds limit'
     });
   }
-  
+
   // CORS errors
-  if (error.message === 'Not allowed by CORS') {
+  if (error.message && error.message.includes('CORS')) {
     return res.status(403).json({
-      error: 'CORS policy violation',
-      message: 'Origin not allowed'
+      error: 'CORS error',
+      message: 'Cross-origin request blocked'
     });
   }
-  
-  // Default error
+
+  // Default error response
   const statusCode = error.statusCode || error.status || 500;
-  const message = error.message || 'Internal Server Error';
-  
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal server error' 
+    : error.message;
+
   res.status(statusCode).json({
-    error: process.env.NODE_ENV === 'development' ? message : 'Internal Server Error',
+    error: 'Server error',
+    message,
     ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
   });
 });
 
-// Database connection
-const connectDB = async () => {
-  try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rickorty-db';
-    
-    await mongoose.connect(mongoURI, {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      bufferCommands: false
-    });
-    
-    console.log('✅ MongoDB connected successfully');
-    
-    // Create indexes
-    const Content = require('./models/Content');
-    const User = require('./models/User');
-    const Comment = require('./models/Comment');
-
-    await Content.createIndexes();
-    await User.createIndexes();
-    await Comment.createIndexes();
-    
-    console.log('✅ Database indexes created');
-    
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error.message);
-    console.log('\n📝 To run this application, you need MongoDB running.');
-    console.log('Options:');
-    console.log('1. Install and start MongoDB locally');
-    console.log('2. Use MongoDB Atlas (cloud) - update MONGODB_URI in .env');
-    console.log('3. Use Docker: docker run -d -p 27017:27017 mongo');
-    console.log('\nFor now, starting server without database connection...');
-    return false;
-  }
-};
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await mongoose.connection.close();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await mongoose.connection.close();
-  process.exit(0);
-});
-
-// Start server
+// Database connection and server startup
 const startServer = async () => {
   try {
-    const dbConnected = await connectDB();
-    
-    app.listen(PORT, () => {
+    console.log('🔄 Initializing database connection...');
+    await initializeDatabase();
+    console.log('✅ Database connected successfully');
+
+    const PORT = process.env.PORT || 5000;
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌐 Client URL: ${process.env.CLIENT_URL || 'http://localhost:3000'}`);
-      
-      if (dbConnected) {
-        console.log(`✅ Database: Connected`);
-      } else {
-        console.log(`⚠️  Database: Not connected (some features may not work)`);
-      }
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 Client URL: ${process.env.CLIENT_URL || 'Not set'}`);
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`🔗 API Base: http://localhost:${PORT}/api`);
-        console.log(`❤️  Health Check: http://localhost:${PORT}/health`);
+        console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+        console.log(`🔗 API base: http://localhost:${PORT}/api`);
       }
     });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal) => {
+      console.log(`\n📴 Received ${signal}. Starting graceful shutdown...`);
+      
+      server.close(async () => {
+        console.log('🔌 HTTP server closed');
+        
+        try {
+          await closeDatabase();
+          console.log('🗄️ Database connection closed');
+        } catch (error) {
+          console.error('❌ Error closing database:', error);
+        }
+        
+        console.log('✅ Graceful shutdown completed');
+        process.exit(0);
+      });
+
+      // Force close after 30 seconds
+      setTimeout(() => {
+        console.error('⚠️ Forced shutdown after timeout');
+        process.exit(1);
+      }, 30000);
+    };
+
+    // Handle shutdown signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      console.error('💥 Uncaught Exception:', error);
+      gracefulShutdown('uncaughtException');
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+      gracefulShutdown('unhandledRejection');
+    });
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 };
 
-startServer();
+// Start the server
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;
