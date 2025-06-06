@@ -1,39 +1,36 @@
-const mongoose = require('mongoose');
+const { connectDB } = require('./config/database');
 const User = require('./models/User');
 require('dotenv').config();
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb://localhost:27017/rickandmorty';
-
 async function setupAdmin() {
   try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB for admin setup');
+    await connectDB();
+    console.log('Connected to PostgreSQL for admin setup');
 
     // Look for user with username 'Replika'
-    let user = await User.findOne({ username: 'Replika' });
+    let user = await User.findByUsername('Replika');
     
     if (!user) {
       // If Replika doesn't exist, make the first user admin
-      user = await User.findOne().sort({ createdAt: 1 });
+      const users = await User.find({ limit: 1, sort: 'created_at', order: 'ASC' });
       
-      if (!user) {
+      if (users.length === 0) {
         console.log('No users found in database. Admin setup will run after first user registration.');
         return;
       }
       
+      user = users[0];
       console.log(`User 'Replika' not found. Making first user ${user.username} admin instead.`);
     }
 
     // Update user role to admin
-    await User.findByIdAndUpdate(user._id, { role: 'admin' });
+    await User.findByIdAndUpdate(user.id, { role: 'admin' });
     
     console.log(`Successfully made ${user.username} (${user.email}) an admin!`);
     console.log('They now have admin privileges for content moderation.');
     
   } catch (error) {
     console.error('Error setting up admin:', error);
-  } finally {
-    await mongoose.disconnect();
   }
 }
 

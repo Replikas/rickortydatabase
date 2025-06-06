@@ -1,12 +1,15 @@
-const mongoose = require('mongoose');
 const path = require('path');
 
-// Try to load from server directory first (for Railway deployment)
-let User;
+// Try to load database and User model from server directory first (for Railway deployment)
+let User, connectDB;
 try {
+  const database = require('../server/config/database');
+  connectDB = database.connectDB;
   User = require('../server/models/User');
 } catch (error) {
   // If running from server directory
+  const database = require('./config/database');
+  connectDB = database.connectDB;
   User = require('./models/User');
 }
 
@@ -17,12 +20,10 @@ try {
   require('dotenv').config();
 }
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rickandmorty';
-
 async function makeAdmin() {
   try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB');
+    await connectDB();
+    console.log('Connected to PostgreSQL');
 
     // Get the first user or a specific user
     const args = process.argv.slice(2);
@@ -31,12 +32,13 @@ async function makeAdmin() {
     if (args.length > 0) {
       // Make specific user admin by username or email
       const identifier = args[0];
-      user = await User.findOne({
-        $or: [
-          { username: identifier },
-          { email: identifier }
-        ]
-      });
+      // Try to find by username first
+      user = await User.findByUsername(identifier);
+      
+      // If not found, try by email
+      if (!user) {
+        user = await User.findByEmail(identifier);
+      }
       
       if (!user) {
         console.log(`User not found: ${identifier}`);
@@ -44,16 +46,18 @@ async function makeAdmin() {
       }
     } else {
       // Make the first user admin
-      user = await User.findOne().sort({ createdAt: 1 });
+      const users = await User.find({ limit: 1, sort: 'created_at', order: 'ASC' });
       
-      if (!user) {
+      if (users.length === 0) {
         console.log('No users found in database');
         process.exit(1);
       }
+      
+      user = users[0];
     }
 
     // Update user role to admin
-    await User.findByIdAndUpdate(user._id, { role: 'admin' });
+    await User.findByIdAndUpdate(user.id, { role: 'admin' });
     
     console.log(`Successfully made ${user.username} (${user.email}) an admin!`);
     console.log('They now have admin privileges for content moderation.');
@@ -61,7 +65,6 @@ async function makeAdmin() {
   } catch (error) {
     console.error('Error making user admin:', error);
   } finally {
-    await mongoose.disconnect();
     process.exit(0);
   }
 }

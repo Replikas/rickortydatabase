@@ -1,5 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const { connectDB } = require('./config/database');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
@@ -55,18 +55,15 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rickorty-db', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+// PostgreSQL connection and server startup
+connectDB()
 .then(() => {
-  console.log('Connected to MongoDB');
+  console.log('Connected to PostgreSQL');
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 })
 .catch((error) => {
-  console.error('MongoDB connection error:', error);
+  console.error('PostgreSQL connection error:', error);
   process.exit(1);
 });
